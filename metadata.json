@@ -1,0 +1,6 @@
+{
+  "name": "GuaraFood - Clipe Musical & Studio Interativo",
+  "description": "Video clipe dinamico e interativo com imagens em movimento, transicoes incriveis de ingredientes frescos e sincronizacao de audio para o GuaraFood.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
