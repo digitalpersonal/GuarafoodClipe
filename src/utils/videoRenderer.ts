@@ -375,23 +375,23 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
       const adjustedTime = currentLoopTime - subtitleOffset;
       const activePartner = partners.find((p) => adjustedTime >= p.timeMark && adjustedTime < p.timeMark + 2.5);
       if (activePartner) {
-        const badgeY = height * 0.12;
-        const badgeW = width * 0.6;
-        const badgeH = height * 0.07;
-        const badgeX = (width - badgeW) / 2;
+        const badgeH = height * 0.04;
+        const badgeW = width * 0.3; // Much smaller width
+        const badgeY = height * 0.05; // Moved even higher
+        const badgeX = width * 0.03;
         ctx.save();
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 4;
+        ctx.fillStyle = 'rgba(2, 6, 23, 0.7)';
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 24);
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 8);
         ctx.fill();
         ctx.stroke();
         ctx.fillStyle = '#ffffff';
-        ctx.font = `bold ${Math.round(height * 0.025)}px sans-serif`;
+        ctx.font = `bold ${Math.round(height * 0.016)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${activePartner.icon} ${activePartner.name.toUpperCase()}`, width / 2, badgeY + badgeH / 2);
+        ctx.fillText(`${activePartner.icon} ${activePartner.name.toUpperCase()}`, badgeX + badgeW/2, badgeY + badgeH / 2);
         ctx.restore();
       }
 
@@ -428,21 +428,21 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
 
       // 6. BOTTOM BANNER (guarafood.com.br)
       ctx.save();
-      const bannerText = 'PEÇA AGORA: GUARAFOOD.COM.BR';
-      const bannerFontSize = Math.round(height * 0.022);
+      const bannerText = 'GUARAFOOD.COM.BR';
+      const bannerFontSize = Math.round(height * 0.014); // Smaller
       ctx.font = `900 ${bannerFontSize}px "Outfit", sans-serif`;
       const textMetrics = ctx.measureText(bannerText);
       
-      const bannerW = textMetrics.width + (width * 0.08);
-      const bannerH = height * 0.052;
+      const bannerW = textMetrics.width + (width * 0.03);
+      const bannerH = height * 0.03;
       const bannerX = (width - bannerW) / 2;
-      const bannerY = height - bannerH - (height * 0.035);
+      const bannerY = height - bannerH - (height * 0.015);
       
-      ctx.fillStyle = 'rgba(2, 6, 23, 0.98)';
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 4;
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.7)';
+      ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 18);
+      ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 8);
       ctx.fill();
       ctx.stroke();
       
