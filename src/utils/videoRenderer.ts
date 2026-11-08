@@ -22,11 +22,11 @@ export interface RenderResult {
 export function getSupportedMimeType(): string {
   if (typeof MediaRecorder === 'undefined') return '';
   const types = [
+    'video/mp4;codecs=avc1,mp4a.40.2',
+    'video/mp4',
     'video/webm;codecs=vp9,opus',
     'video/webm;codecs=vp8,opus',
     'video/webm',
-    'video/mp4;codecs=avc1,mp4a.40.2',
-    'video/mp4',
   ];
   for (const t of types) {
     if (MediaRecorder.isTypeSupported(t)) {
