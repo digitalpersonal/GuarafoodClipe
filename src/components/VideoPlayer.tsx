@@ -184,14 +184,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const getContainerRatioStyle = () => {
     switch (aspectRatio) {
       case '9:16':
-        return 'w-full max-w-[340px] h-[620px] rounded-[40px] border-8 border-slate-900 shadow-[0_0_50px_rgba(245,158,11,0.2)]';
+        return 'w-full max-w-[min(340px,90vw)] aspect-[9/16] rounded-[40px] border-8 border-slate-900 shadow-[0_0_50px_rgba(245,158,11,0.2)]';
       case '1:1':
-        return 'w-full max-w-[480px] aspect-square rounded-3xl border border-slate-800 shadow-2xl';
+        return 'w-full max-w-[min(480px,95vw)] aspect-square rounded-3xl border border-slate-800 shadow-2xl';
       case '21:9':
-        return 'w-full aspect-[21/9] rounded-2xl border border-slate-800 shadow-2xl';
+        return 'w-full max-w-full aspect-[21/9] rounded-2xl border border-slate-800 shadow-2xl';
       case '16:9':
       default:
-        return 'w-full aspect-video rounded-2xl border border-slate-800/80 shadow-2xl';
+        return 'w-full max-w-full aspect-video rounded-2xl border border-slate-800/80 shadow-2xl';
     }
   };
 
@@ -447,7 +447,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
 
           {/* BOTTOM HUD CONTROLS */}
-          <div className="flex items-center justify-between gap-3 text-white">
+          <div className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-white">
             <div className="flex items-center gap-2">
               <button
                 onClick={onPlayPause}
@@ -517,7 +517,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         href="https://guarafood.com.br"
         target="_blank"
         rel="noopener noreferrer"
-        className="w-full max-w-xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:via-orange-400 hover:to-amber-400 text-slate-950 p-3 sm:p-3.5 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.4)] flex items-center justify-between gap-3 font-extrabold transition-all transform hover:scale-[1.01] active:scale-98 cursor-pointer border border-amber-400"
+        className="w-full max-w-[min(100%,576px)] bg-gradient-to-r from-amber-500 via-orange-500 to-amber-500 hover:from-amber-400 hover:via-orange-400 hover:to-amber-400 text-slate-950 p-2.5 sm:p-3.5 rounded-2xl shadow-[0_0_30px_rgba(245,158,11,0.4)] flex items-center justify-between gap-2 sm:gap-3 font-extrabold transition-all transform hover:scale-[1.01] active:scale-98 cursor-pointer border border-amber-400 mx-auto"
       >
         <div className="flex items-center gap-2.5">
           <div className="p-2 rounded-xl bg-slate-950 text-amber-400 shadow">
@@ -525,9 +525,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           </div>
           <div className="text-left">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-900 block leading-none">
-              Site Oficial de Delivery · Guaranésia - MG
+              Site Oficial Guaranésia - MG
             </span>
-            <span className="text-base sm:text-lg font-black tracking-wider font-heading underline decoration-slate-950 underline-offset-2 leading-tight">
+            <span className="text-sm sm:text-lg font-black tracking-wider font-heading underline decoration-slate-950 underline-offset-2 leading-tight break-all sm:break-normal">
               GUARAFOOD.COM.BR
             </span>
           </div>

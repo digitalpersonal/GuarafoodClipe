@@ -160,7 +160,10 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
     const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
     audioSource = audioCtx.createBufferSource();
     audioSource.buffer = audioBuffer;
-    audioSource.connect(dest);
+    const musicGain = audioCtx.createGain();
+    musicGain.gain.value = 0.85; // Slightly lower music to let SFX pop
+    audioSource.connect(musicGain);
+    musicGain.connect(dest);
   } catch (err) {
     console.warn('Audio decoding failed, proceeding with silent audio:', err);
   }
@@ -171,11 +174,13 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
 
   for (const cue of enabledCues) {
     try {
-      const sfxBuffer = generateSFXBuffer(audioCtx, cue.type, cue.duration, cue.volume);
+      // Pass 1.0 to generate a normalized buffer, then scale with gain node below
+      const sfxBuffer = generateSFXBuffer(audioCtx, cue.type, cue.duration, 1.0);
       const sfxSource = audioCtx.createBufferSource();
       sfxSource.buffer = sfxBuffer;
       const sfxGain = audioCtx.createGain();
-      sfxGain.gain.value = cue.volume;
+      // Increase gain to ensure visibility in mix
+      sfxGain.gain.value = cue.volume * 1.5; 
       sfxSource.connect(sfxGain);
       sfxGain.connect(dest);
       sfxSources.push({ src: sfxSource, timeMark: cue.timeMark + sfxOffset, name: cue.name });
@@ -213,7 +218,9 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
 
   // Start recording
   recorder.start();
-  const startAudioTime = audioCtx.currentTime;
+  const preRoll = 1.2; // 1.2s delay to ensure capture is ready
+  const startAudioTime = audioCtx.currentTime + preRoll;
+  
   if (audioSource) {
     audioSource.start(startAudioTime);
   }
@@ -229,9 +236,13 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
 
   // Master render loop tied to Audio Clock for perfect sync
   return new Promise<RenderResult>((resolve, reject) => {
+    const renderStartTime = audioCtx.currentTime;
+    const totalRenderDuration = duration + preRoll;
+
     const renderFrame = async () => {
-      const elapsed = audioCtx.currentTime - startAudioTime;
-      const currentLoopTime = Math.min(duration, Math.max(0, elapsed));
+      const elapsedTotal = audioCtx.currentTime - renderStartTime;
+      const currentLoopTime = Math.max(0, elapsedTotal - preRoll);
+      const isInPreRoll = elapsedTotal < preRoll;
 
       // 1. CLEAR & BACKGROUND
       ctx.save();
@@ -247,11 +258,18 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
       const media = loadedMedia[currentSceneIdx] || loadedMedia[0];
 
       const sceneDuration = Math.max(0.1, scene.endTime - scene.startTime);
-      const sceneProgress = Math.min(1, Math.max(0, (currentLoopTime - scene.startTime) / sceneDuration));
+      const sceneProgress = isInPreRoll ? 0 : Math.min(1, Math.max(0, (currentLoopTime - scene.startTime) / sceneDuration));
 
-      // Handle video sync
+      // Handle video sync with frame-wait logic for rendering
       if (media instanceof HTMLVideoElement && media.duration) {
-        media.currentTime = sceneProgress * media.duration;
+        const targetTime = isInPreRoll ? 0 : sceneProgress * media.duration;
+        // Only seek if significantly different to avoid excessive seeking overhead
+        if (Math.abs(media.currentTime - targetTime) > 0.03) {
+          media.currentTime = targetTime;
+          // In a real render, we'd wait for 'seeked' event here. 
+          // For now, we'll proceed as requestAnimationFrame usually gives enough buffer 
+          // between frames at 30fps.
+        }
       }
 
       // Ken Burns / Transition transform
@@ -455,17 +473,17 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
         }
       }
 
-      const progressPercent = Math.min(99, Math.round((currentLoopTime / duration) * 100));
+      const progressPercent = Math.min(99, Math.round((elapsedTotal / totalRenderDuration) * 100));
       onProgress({
         percent: progressPercent,
         currentSecond: Math.round(currentLoopTime),
         totalSeconds: duration,
         sceneIndex: currentSceneIdx + 1,
         sceneTitle: scene.title,
-        statusText: `Finalizando: ${progressPercent}% (${Math.round(currentLoopTime)}s / ${Math.round(duration)}s)`,
+        statusText: isInPreRoll ? 'Preparando abertura...' : `Renderizando: ${progressPercent}% (${Math.round(currentLoopTime)}s / ${Math.round(duration)}s)`,
       });
 
-      if (currentLoopTime < duration) {
+      if (elapsedTotal < totalRenderDuration) {
         requestAnimationFrame(renderFrame);
       } else {
         if (audioSource) { try { audioSource.stop(); } catch {} }

@@ -206,7 +206,7 @@ export default function App() {
       />
 
       {/* MAIN CONTAINER */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-8">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-2 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-6 sm:space-y-8">
         {/* HERO TITLE BANNER */}
         <div className="text-center space-y-3 max-w-3xl mx-auto pt-2">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider">
@@ -224,7 +224,7 @@ export default function App() {
         </div>
 
         {/* PRIMARY VIEWPORT & CONTROL GRID */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start overflow-hidden">
           {/* LEFT/TOP COLUMN: THE VIDEO CLIP PLAYER */}
           <div className="lg:col-span-7 flex flex-col items-center justify-center gap-4">
             <VideoPlayer
@@ -271,7 +271,7 @@ export default function App() {
           </div>
 
           {/* RIGHT COLUMN: LYRICS KARAOKE & DIRECTOR STUDIO PANEL */}
-          <div className="lg:col-span-5 space-y-6">
+          <div className="lg:col-span-5 space-y-6 w-full overflow-hidden">
             {/* INTERACTIVE NAVIGATION TABS */}
             <div className="flex items-center gap-1 p-1 bg-slate-900 rounded-xl border border-slate-800 overflow-x-auto max-w-full">
               <button
