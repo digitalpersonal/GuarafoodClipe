@@ -385,15 +385,10 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         {/* TV COMMERCIAL PARTNER SPOTLIGHT BADGE */}
         {activePartner && (
           <div className="absolute top-16 left-4 z-30 animate-in slide-in-from-left duration-300">
-            <div className="flex items-center gap-3 px-3.5 py-2 rounded-xl bg-slate-950/90 border-l-4 border-amber-500 border-y border-r border-slate-800 shadow-2xl backdrop-blur-xl text-white max-w-[240px]">
+            <div className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-slate-950/90 border-l-4 border-amber-500 border-y border-r border-slate-800 shadow-2xl backdrop-blur-xl text-white max-w-[240px]">
               <span className="text-xl">{activePartner.icon}</span>
-              <div className="truncate">
-                <div className="text-[9px] font-extrabold uppercase text-amber-400">
-                  PARCEIRO EM DESTAQUE
-                </div>
-                <div className="text-xs font-extrabold text-white font-heading truncate">
-                  {activePartner.name}
-                </div>
+              <div className="text-sm font-black text-white font-heading truncate">
+                {activePartner.name}
               </div>
             </div>
           </div>
@@ -404,8 +399,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           <div className={`absolute inset-x-2 z-30 transition-all duration-300 flex justify-center pointer-events-none ${
             showControls || !isPlaying ? 'bottom-32 sm:bottom-36' : 'bottom-16 sm:bottom-20'
           }`}>
-            <div className="px-4 py-1.5 rounded-lg bg-slate-950/95 backdrop-blur-md border border-amber-500/50 shadow-2xl text-center max-w-md">
-              <div className="text-xs sm:text-base font-black text-amber-300 font-heading tracking-tight leading-tight">
+            <div className="px-4 py-1.5 rounded-lg bg-slate-950/95 backdrop-blur-md border border-amber-500/50 shadow-2xl text-center max-w-[88%] mx-auto">
+              <div className="text-xs sm:text-lg font-black text-amber-300 font-heading tracking-tight leading-tight break-words">
                 {activeLyric.text}
               </div>
             </div>
@@ -420,17 +415,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
             href="https://guarafood.com.br"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-1.5 sm:py-2 rounded-2xl bg-slate-950/95 border-2 border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.6)] backdrop-blur-md hover:bg-amber-500 hover:text-slate-950 text-white transition-all group cursor-pointer"
+            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-2xl bg-slate-950/95 border-2 border-amber-500 shadow-[0_0_30px_rgba(245,158,11,0.6)] backdrop-blur-md hover:bg-amber-500 hover:text-slate-950 text-white transition-all group cursor-pointer max-w-[95%]"
           >
-            <Globe className="w-4 sm:w-5 h-4 sm:h-5 text-amber-400 group-hover:text-slate-950 animate-pulse shrink-0" />
-            <span className="text-[10px] sm:text-xs font-extrabold tracking-wide font-heading uppercase text-slate-200 group-hover:text-slate-950">
-              PEÇA AGORA:
+            <Globe className="w-3.5 sm:w-5 h-3.5 sm:h-5 text-amber-400 group-hover:text-slate-950 animate-pulse shrink-0" />
+            <span className="text-[9px] sm:text-xs font-extrabold tracking-wide font-heading uppercase text-slate-200 group-hover:text-slate-950">
+              PEÇA:
             </span>
             <span className="text-xs sm:text-lg font-black text-amber-400 group-hover:text-slate-950 tracking-wider font-heading underline decoration-amber-400 group-hover:decoration-slate-950 underline-offset-2">
               GUARAFOOD.COM.BR
-            </span>
-            <span className="hidden sm:inline text-[10px] font-extrabold text-slate-950 bg-amber-400 px-2 py-0.5 rounded shadow ml-1">
-              Guaranésia - MG
             </span>
           </a>
         </div>

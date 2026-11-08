@@ -373,7 +373,7 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
         ctx.font = `bold ${Math.round(height * 0.025)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(`${activePartner.icon} ${activePartner.name.toUpperCase()} · ${activePartner.discountBadge}`, width / 2, badgeY + badgeH / 2);
+        ctx.fillText(`${activePartner.icon} ${activePartner.name.toUpperCase()}`, width / 2, badgeY + badgeH / 2);
         ctx.restore();
       }
 
@@ -386,13 +386,23 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
           ctx.textAlign = 'center';
           ctx.textBaseline = 'bottom';
           const tagText = activeLyric.section === 'chorus' ? '🔥 REFRÃO' : activeLyric.section === 'partners' ? '⭐ PARCEIROS' : '🎵 GUARAFOOD';
-          ctx.font = `bold ${Math.round(height * 0.018)}px "Outfit", sans-serif`;
+          ctx.font = `bold ${Math.round(height * 0.016)}px "Outfit", sans-serif`;
           ctx.fillStyle = '#fbbf24';
           ctx.fillText(tagText, width / 2, height - (height * 0.18));
-          ctx.font = `900 ${Math.round(height * 0.038)}px "Outfit", sans-serif`;
+          
+          const fontSize = Math.round(height * 0.034);
+          ctx.font = `900 ${fontSize}px "Outfit", sans-serif`;
           ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
           ctx.shadowBlur = 14;
           ctx.fillStyle = '#ffffff';
+
+          // Simple wrapping or scaling for narrow screens
+          const maxWidth = width * 0.85;
+          const metrics = ctx.measureText(activeLyric.text);
+          if (metrics.width > maxWidth) {
+            ctx.font = `900 ${Math.round(fontSize * (maxWidth / metrics.width))}px "Outfit", sans-serif`;
+          }
+          
           ctx.fillText(activeLyric.text, width / 2, height - (height * 0.12));
           ctx.restore();
         }
@@ -400,10 +410,16 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
 
       // 6. BOTTOM BANNER (guarafood.com.br)
       ctx.save();
-      const bannerW = width * 0.48;
-      const bannerH = height * 0.055;
+      const bannerText = 'PEÇA AGORA: GUARAFOOD.COM.BR';
+      const bannerFontSize = Math.round(height * 0.022);
+      ctx.font = `900 ${bannerFontSize}px "Outfit", sans-serif`;
+      const textMetrics = ctx.measureText(bannerText);
+      
+      const bannerW = textMetrics.width + (width * 0.08);
+      const bannerH = height * 0.052;
       const bannerX = (width - bannerW) / 2;
       const bannerY = height - bannerH - (height * 0.035);
+      
       ctx.fillStyle = 'rgba(2, 6, 23, 0.98)';
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 4;
@@ -411,11 +427,11 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
       ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 18);
       ctx.fill();
       ctx.stroke();
+      
       ctx.fillStyle = '#ffffff';
-      ctx.font = `900 ${Math.round(height * 0.024)}px "Outfit", sans-serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('PEÇA AGORA: GUARAFOOD.COM.BR', width / 2, bannerY + bannerH / 2);
+      ctx.fillText(bannerText, width / 2, bannerY + bannerH / 2);
       ctx.restore();
 
       // 7. FINAL FADE OUT (Last 1.5 seconds)
