@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  h1, h2, h3, h4, .font-heading {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+/* Fast Agile TV Commercial Camera Keyframes with GPU acceleration */
+@keyframes ken-burns-zoom {
+  0% { transform: scale(1.0) translate3d(0, 0, 0); }
+  50% { transform: scale(1.18) translate3d(-2%, -1.5%, 0); }
+  100% { transform: scale(1.10) translate3d(1.5%, 1%, 0); }
+}
+
+@keyframes camera-pan-left {
+  0% { transform: scale(1.18) translate3d(4.5%, 0, 0); }
+  100% { transform: scale(1.18) translate3d(-4.5%, 0, 0); }
+}
+
+@keyframes camera-pan-right {
+  0% { transform: scale(1.18) translate3d(-4.5%, 0, 0); }
+  100% { transform: scale(1.18) translate3d(4.5%, 0, 0); }
+}
+
+@keyframes camera-tilt-pulse {
+  0%, 100% { transform: scale(1.08) rotate(0deg) translate3d(0, 0, 0); }
+  50% { transform: scale(1.16) rotate(1.5deg) translate3d(0, -1%, 0); }
+}
+
+@keyframes whip-pan-fast {
+  0% { transform: scale(1.22) translate3d(-6%, 0, 0); }
+  100% { transform: scale(1.12) translate3d(4%, 0, 0); }
+}
+
+@keyframes fast-beat-zoom {
+  0% { transform: scale(1.04) translate3d(0, 0, 0); }
+  50% { transform: scale(1.16) translate3d(0, -1%, 0); }
+  100% { transform: scale(1.08) translate3d(0, 0, 0); }
+}
+
+.animate-ken-burns {
+  animation: ken-burns-zoom 7s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-pan-left {
+  animation: camera-pan-left 6s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-pan-right {
+  animation: camera-pan-right 6s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-tilt-pulse {
+  animation: camera-tilt-pulse 5s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-whip-pan {
+  animation: whip-pan-fast 5s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.animate-beat-zoom {
+  animation: fast-beat-zoom 4s cubic-bezier(0.25, 1, 0.5, 1) infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@keyframes camera-fade {
+  0% { opacity: 0; transform: scale(1.05); }
+  20%, 100% { opacity: 1; transform: scale(1.12) translate3d(0.5%, 0.5%, 0); }
+}
+
+@keyframes camera-fast-zoom {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.3) translate3d(-1%, -1%, 0); }
+}
+
+.animate-fade {
+  animation: camera-fade 5s ease-out infinite alternate;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.animate-fast-zoom {
+  animation: camera-fast-zoom 3s cubic-bezier(0.33, 1, 0.68, 1) infinite alternate;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.5);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.8);
+}
