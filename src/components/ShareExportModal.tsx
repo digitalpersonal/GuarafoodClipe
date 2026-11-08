@@ -34,6 +34,10 @@ interface ShareExportModalProps {
   audioUrl: string;
   duration: number;
   sfxCues?: SoundEffectCue[];
+  sfxMasterVolume?: number;
+  isSfxGloballyEnabled?: boolean;
+  subtitleOffset?: number;
+  sfxOffset?: number;
 }
 
 export const ShareExportModal: React.FC<ShareExportModalProps> = ({
@@ -47,10 +51,14 @@ export const ShareExportModal: React.FC<ShareExportModalProps> = ({
   audioUrl,
   duration,
   sfxCues = [],
+  sfxMasterVolume = 0.8,
+  isSfxGloballyEnabled = true,
+  subtitleOffset = 0,
+  sfxOffset = 0,
 }) => {
   const [selectedRatio, setSelectedRatio] = useState<AspectRatioMode>(aspectRatio);
   const [includeSubtitles, setIncludeSubtitles] = useState(true);
-  const [includeSfx, setIncludeSfx] = useState(true);
+  const [includeSfx, setIncludeSfx] = useState(isSfxGloballyEnabled);
   const [isRendering, setIsRendering] = useState(false);
   const [renderProgress, setRenderProgress] = useState<RenderProgress | null>(null);
   const [renderResult, setRenderResult] = useState<RenderResult | null>(null);
@@ -97,7 +105,9 @@ export const ShareExportModal: React.FC<ShareExportModalProps> = ({
         duration: duration || 67,
         aspectRatio: selectedRatio,
         showSubtitles: includeSubtitles,
-        sfxCues: includeSfx ? sfxCues : [],
+        sfxCues: includeSfx ? sfxCues.map(c => ({ ...c, volume: c.volume * sfxMasterVolume })) : [],
+        subtitleOffset,
+        sfxOffset,
         onProgress: (progress) => {
           setRenderProgress(progress);
         },

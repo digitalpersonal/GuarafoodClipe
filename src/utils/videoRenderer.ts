@@ -61,6 +61,8 @@ export async function renderFinalCommercialVideo({
   aspectRatio = '16:9',
   showSubtitles = true,
   sfxCues = [],
+  subtitleOffset = 0,
+  sfxOffset = 0,
   onProgress,
   previewCanvas,
 }: {
@@ -72,6 +74,8 @@ export async function renderFinalCommercialVideo({
   aspectRatio?: AspectRatioMode;
   showSubtitles?: boolean;
   sfxCues?: SoundEffectCue[];
+  subtitleOffset?: number;
+  sfxOffset?: number;
   onProgress: (p: RenderProgress) => void;
   previewCanvas?: HTMLCanvasElement | null;
 }): Promise<RenderResult> {
@@ -89,20 +93,43 @@ export async function renderFinalCommercialVideo({
     height = 820;
   }
 
-  // Pre-load all scene images in parallel
+  // Pre-load all scene media (images and videos) in parallel
   onProgress({
     percent: 3,
     currentSecond: 0,
     totalSeconds: duration,
     sceneIndex: 0,
-    sceneTitle: 'Carregando imagens em alta definição...',
-    statusText: 'Pré-carregando fotografias profissionais das 17 cenas...',
+    sceneTitle: 'Carregando mídias em alta definição...',
+    statusText: 'Pré-carregando fotografias e vídeos das 17 cenas...',
   });
 
-  const [watermarkImg, ...loadedImages] = await Promise.all([
+  const [watermarkImg, ...loadedMedia] = await Promise.all([
     preloadImage('/assets/aistudio/Logo_GuaraFood_2026_transparent.png'),
-    ...scenes.map((s) => preloadImage(s.imageSrc)),
+    ...scenes.map((s) => {
+      if (s.videoSrc) {
+        return preloadVideo(s.videoSrc);
+      }
+      return preloadImage(s.imageSrc);
+    }),
   ]);
+
+// Preload a video URL into HTMLVideoElement
+function preloadVideo(src: string): Promise<HTMLVideoElement> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video');
+    video.crossOrigin = 'anonymous';
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.oncanplaythrough = () => resolve(video);
+    video.onerror = () => {
+      // Return an empty video element if it fails
+      resolve(video);
+    };
+    video.src = src;
+    video.load();
+  });
+}
 
   // Set up offscreen canvas
   const canvas = document.createElement('canvas');
@@ -151,7 +178,7 @@ export async function renderFinalCommercialVideo({
       sfxGain.gain.value = cue.volume;
       sfxSource.connect(sfxGain);
       sfxGain.connect(dest);
-      sfxSources.push({ src: sfxSource, timeMark: cue.timeMark, name: cue.name });
+      sfxSources.push({ src: sfxSource, timeMark: cue.timeMark + sfxOffset, name: cue.name });
     } catch (e) {
       console.warn('Could not synthesize SFX for render:', cue.name, e);
     }
@@ -184,8 +211,8 @@ export async function renderFinalCommercialVideo({
     };
   });
 
-  // Start recording and audio
-  recorder.start(250);
+  // Start recording
+  recorder.start();
   const startAudioTime = audioCtx.currentTime;
   if (audioSource) {
     audioSource.start(startAudioTime);
@@ -200,251 +227,243 @@ export async function renderFinalCommercialVideo({
     }
   }
 
-  const fps = 30;
-  const totalFrames = Math.max(1, Math.round(duration * fps));
-  const frameIntervalMs = 1000 / fps;
+  // Master render loop tied to Audio Clock for perfect sync
+  return new Promise<RenderResult>((resolve, reject) => {
+    const renderFrame = async () => {
+      const elapsed = audioCtx.currentTime - startAudioTime;
+      const currentLoopTime = Math.min(duration, Math.max(0, elapsed));
 
-  // Render frame by frame
-  for (let frame = 0; frame <= totalFrames; frame++) {
-    const currentTime = frame / fps;
-
-    // Find active scene
-    const sceneIndex = scenes.findIndex(
-      (s) => currentTime >= s.startTime && currentTime <= s.endTime
-    );
-    const currentSceneIdx = sceneIndex !== -1 ? sceneIndex : Math.min(scenes.length - 1, Math.floor((currentTime / duration) * scenes.length));
-    const scene = scenes[currentSceneIdx] || scenes[0];
-    const img = loadedImages[currentSceneIdx] || loadedImages[0];
-
-    const sceneDuration = Math.max(0.1, scene.endTime - scene.startTime);
-    const sceneProgress = Math.min(1, Math.max(0, (currentTime - scene.startTime) / sceneDuration));
-
-    // Calculate motion / transform for current scene
-    ctx.save();
-    ctx.fillStyle = '#020617';
-    ctx.fillRect(0, 0, width, height);
-
-    // Apply Ken Burns / Transition transform
-    let scale = 1.05;
-    let translateX = 0;
-    let translateY = 0;
-    let opacity = 1.0;
-
-    switch (scene.transitionType) {
-      case 'zoom':
-        scale = 1.05 + 0.15 * sceneProgress;
-        translateY = -15 * sceneProgress;
-        break;
-      case 'fast-zoom':
-        scale = 1.02 + 0.32 * Math.pow(sceneProgress, 1.2);
-        break;
-      case 'pan-left':
-        scale = 1.15;
-        translateX = 40 * (1 - 2 * sceneProgress);
-        break;
-      case 'pan-right':
-        scale = 1.15;
-        translateX = -40 * (1 - 2 * sceneProgress);
-        break;
-      case 'whip-pan':
-      case 'glitch':
-        scale = 1.12;
-        translateX = -70 * (1 - sceneProgress);
-        break;
-      case 'fade':
-        scale = 1.05 + 0.08 * sceneProgress;
-        if (sceneProgress < 0.2) {
-          opacity = sceneProgress / 0.2;
-        } else if (sceneProgress > 0.85) {
-          opacity = (1 - sceneProgress) / 0.15;
-        }
-        break;
-      case 'pulse':
-      case 'rotate':
-      default:
-        scale = 1.08 + 0.08 * Math.sin(sceneProgress * Math.PI);
-        break;
-    }
-
-    ctx.globalAlpha = opacity;
-    ctx.translate(width / 2, height / 2);
-    ctx.scale(scale, scale);
-    ctx.translate(-width / 2 + translateX, -height / 2 + translateY);
-
-    // Draw background cover image
-    if (img && img.width > 0) {
-      const imgRatio = img.width / img.height;
-      const canvasRatio = width / height;
-      let drawW = width;
-      let drawH = height;
-      let drawX = 0;
-      let drawY = 0;
-
-      if (imgRatio > canvasRatio) {
-        drawH = height;
-        drawW = height * imgRatio;
-        drawX = (width - drawW) / 2;
-      } else {
-        drawW = width;
-        drawH = width / imgRatio;
-        drawY = (height - drawH) / 2;
-      }
-      ctx.drawImage(img, drawX, drawY, drawW, drawH);
-    }
-    ctx.restore();
-
-    // 2. Cinematic vignette & bottom gradient for lyrics readability
-    const grad = ctx.createLinearGradient(0, height * 0.55, 0, height);
-    grad.addColorStop(0, 'rgba(2, 6, 23, 0)');
-    grad.addColorStop(0.7, 'rgba(2, 6, 23, 0.7)');
-    grad.addColorStop(1, 'rgba(2, 6, 23, 0.95)');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, height * 0.55, width, height * 0.45);
-
-    // Top subtle bar gradient for watermark contrast
-    const topGrad = ctx.createLinearGradient(0, 0, 0, height * 0.2);
-    topGrad.addColorStop(0, 'rgba(2, 6, 23, 0.75)');
-    topGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
-    ctx.fillStyle = topGrad;
-    ctx.fillRect(0, 0, width, height * 0.2);
-
-    // 3. Draw GuaraFood 2026 Watermark in top right
-    if (watermarkImg && watermarkImg.width > 0) {
-      const wmWidth = Math.round(width * 0.18);
-      const wmHeight = Math.round(wmWidth * (watermarkImg.height / watermarkImg.width));
-      const wmX = width - wmWidth - Math.round(width * 0.03);
-      const wmY = Math.round(height * 0.03);
-
+      // 1. CLEAR & BACKGROUND
       ctx.save();
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
-      ctx.shadowBlur = 12;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 4;
-      ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
-      ctx.restore();
-    }
+      ctx.fillStyle = '#020617';
+      ctx.fillRect(0, 0, width, height);
 
-    // 4. Draw active partner spotlight badge if partner is mentioned
-    const activePartner = partners.find(
-      (p) => currentTime >= p.timeMark && currentTime < p.timeMark + 2.5
-    );
-    if (activePartner) {
-      const badgeY = height * 0.12;
-      ctx.save();
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 3;
-      const badgeW = width * 0.55;
-      const badgeH = 70;
-      const badgeX = (width - badgeW) / 2;
-      
-      // Rounded rect
-      ctx.beginPath();
-      ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 20);
-      ctx.fill();
-      ctx.stroke();
-
-      // Text inside badge
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px "Outfit", sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(`${activePartner.icon} ${activePartner.name} · ${activePartner.discountBadge}`, width / 2, badgeY + badgeH / 2);
-      ctx.restore();
-    }
-
-    // 5. Draw synchronized lyric karaoke text at the bottom
-    if (showSubtitles) {
-      const activeLyric = lyrics.find(
-        (l) => currentTime >= l.startTime && currentTime <= l.endTime
+      // Find active scene
+      const sceneIndex = scenes.findIndex(
+        (s) => currentLoopTime >= s.startTime && currentLoopTime <= s.endTime
       );
-      if (activeLyric) {
+      const currentSceneIdx = sceneIndex !== -1 ? sceneIndex : Math.min(scenes.length - 1, Math.floor((currentLoopTime / duration) * scenes.length));
+      const scene = scenes[currentSceneIdx] || scenes[0];
+      const media = loadedMedia[currentSceneIdx] || loadedMedia[0];
+
+      const sceneDuration = Math.max(0.1, scene.endTime - scene.startTime);
+      const sceneProgress = Math.min(1, Math.max(0, (currentLoopTime - scene.startTime) / sceneDuration));
+
+      // Handle video sync
+      if (media instanceof HTMLVideoElement && media.duration) {
+        media.currentTime = sceneProgress * media.duration;
+      }
+
+      // Ken Burns / Transition transform
+      let scale = 1.05;
+      let translateX = 0;
+      let translateY = 0;
+      let opacity = 1.0;
+
+      // Only apply Ken Burns to static images, or if explicitly requested for video
+      if (!(media instanceof HTMLVideoElement)) {
+        switch (scene.transitionType) {
+          case 'zoom':
+            scale = 1.05 + 0.15 * sceneProgress;
+            translateY = -15 * (height / 1080) * sceneProgress;
+            break;
+          case 'fast-zoom':
+            scale = 1.02 + 0.32 * Math.pow(sceneProgress, 1.2);
+            break;
+          case 'pan-left':
+            scale = 1.15;
+            translateX = 40 * (width / 1920) * (1 - 2 * sceneProgress);
+            break;
+          case 'pan-right':
+            scale = 1.15;
+            translateX = -40 * (width / 1920) * (1 - 2 * sceneProgress);
+            break;
+          case 'whip-pan':
+          case 'glitch':
+            scale = 1.12;
+            translateX = -70 * (width / 1920) * (1 - sceneProgress);
+            break;
+          case 'fade':
+            scale = 1.05 + 0.08 * sceneProgress;
+            if (sceneProgress < 0.2) opacity = sceneProgress / 0.2;
+            else if (sceneProgress > 0.85) opacity = (1 - sceneProgress) / 0.15;
+            break;
+          case 'pulse':
+          case 'rotate':
+          default:
+            scale = 1.08 + 0.08 * Math.sin(sceneProgress * Math.PI);
+            break;
+        }
+      }
+
+      ctx.globalAlpha = opacity;
+      ctx.translate(width / 2, height / 2);
+      ctx.scale(scale, scale);
+      ctx.translate(-width / 2 + translateX, -height / 2 + translateY);
+
+      if (media) {
+        // media can be HTMLImageElement or HTMLVideoElement
+        const mWidth = (media as any).videoWidth || (media as any).width;
+        const mHeight = (media as any).videoHeight || (media as any).height;
+        
+        if (mWidth > 0) {
+          const mediaRatio = mWidth / mHeight;
+          const canvasRatio = width / height;
+          let drawW, drawH, drawX, drawY;
+          if (mediaRatio > canvasRatio) {
+            drawH = height;
+            drawW = height * mediaRatio;
+            drawX = (width - drawW) / 2;
+            drawY = 0;
+          } else {
+            drawW = width;
+            drawH = width / mediaRatio;
+            drawX = 0;
+            drawY = (height - drawH) / 2;
+          }
+          ctx.drawImage(media, drawX, drawY, drawW, drawH);
+        }
+      }
+      ctx.restore();
+
+      // 2. VIGNETTE & GRADIENTS
+      const grad = ctx.createLinearGradient(0, height * 0.55, 0, height);
+      grad.addColorStop(0, 'rgba(2, 6, 23, 0)');
+      grad.addColorStop(0.7, 'rgba(2, 6, 23, 0.7)');
+      grad.addColorStop(1, 'rgba(2, 6, 23, 0.95)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, height * 0.55, width, height * 0.45);
+
+      const topGrad = ctx.createLinearGradient(0, 0, 0, height * 0.2);
+      topGrad.addColorStop(0, 'rgba(2, 6, 23, 0.75)');
+      topGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+      ctx.fillStyle = topGrad;
+      ctx.fillRect(0, 0, width, height * 0.2);
+
+      // 3. WATERMARK
+      if (watermarkImg && watermarkImg.width > 0) {
+        const wmWidth = Math.round(width * 0.16);
+        const wmHeight = Math.round(wmWidth * (watermarkImg.height / watermarkImg.width));
+        const wmX = width - wmWidth - Math.round(width * 0.03);
+        const wmY = Math.round(height * 0.03);
         ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-
-        // Tag (Section: REFRÃO, PARCEIROS, etc.)
-        const tagText = activeLyric.section === 'chorus' ? '🔥 REFRÃO' : activeLyric.section === 'partners' ? '⭐ PARCEIROS' : '🎵 GUARAFOOD';
-        ctx.font = 'bold 18px "Outfit", sans-serif';
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillText(tagText, width / 2, height - 90);
-
-        // Main Lyric Text
-        ctx.font = '900 36px "Outfit", sans-serif';
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
-        ctx.shadowBlur = 14;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 4;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(activeLyric.text, width / 2, height - 40);
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.9)';
+        ctx.shadowBlur = 12;
+        ctx.drawImage(watermarkImg, wmX, wmY, wmWidth, wmHeight);
         ctx.restore();
       }
-    }
 
-    // Update real-time progress preview canvas if provided
-    if (previewCanvas) {
-      const pCtx = previewCanvas.getContext('2d');
-      if (pCtx) {
-        previewCanvas.width = 320;
-        previewCanvas.height = Math.round(320 * (height / width));
-        pCtx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+      // 4. PARTNER BADGE
+      const adjustedTime = currentLoopTime - subtitleOffset;
+      const activePartner = partners.find((p) => adjustedTime >= p.timeMark && adjustedTime < p.timeMark + 2.5);
+      if (activePartner) {
+        const badgeY = height * 0.12;
+        const badgeW = width * 0.6;
+        const badgeH = height * 0.07;
+        const badgeX = (width - badgeW) / 2;
+        ctx.save();
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(badgeX, badgeY, badgeW, badgeH, 24);
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `bold ${Math.round(height * 0.025)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${activePartner.icon} ${activePartner.name.toUpperCase()} · ${activePartner.discountBadge}`, width / 2, badgeY + badgeH / 2);
+        ctx.restore();
       }
-    }
 
-    // Update progress state
-    const progressPercent = Math.min(99, Math.round(10 + (frame / totalFrames) * 88));
-    onProgress({
-      percent: progressPercent,
-      currentSecond: Math.round(currentTime),
-      totalSeconds: duration,
-      sceneIndex: currentSceneIdx + 1,
-      sceneTitle: scene.title,
-      statusText: `Renderizando cena #${currentSceneIdx + 1}: ${scene.title}`,
-    });
+      // 5. SUBTITLES
+      if (showSubtitles) {
+        const adjustedTime = currentLoopTime - subtitleOffset;
+        const activeLyric = lyrics.find((l) => adjustedTime >= l.startTime && adjustedTime <= l.endTime);
+        if (activeLyric) {
+          ctx.save();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          const tagText = activeLyric.section === 'chorus' ? '🔥 REFRÃO' : activeLyric.section === 'partners' ? '⭐ PARCEIROS' : '🎵 GUARAFOOD';
+          ctx.font = `bold ${Math.round(height * 0.018)}px "Outfit", sans-serif`;
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText(tagText, width / 2, height - (height * 0.18));
+          ctx.font = `900 ${Math.round(height * 0.038)}px "Outfit", sans-serif`;
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+          ctx.shadowBlur = 14;
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(activeLyric.text, width / 2, height - (height * 0.12));
+          ctx.restore();
+        }
+      }
 
-    // Pause briefly to give the recorder and browser ticks time to process
-    await new Promise((resolve) => setTimeout(resolve, frameIntervalMs));
-  }
+      // 6. BOTTOM BANNER (guarafood.com.br)
+      ctx.save();
+      const bannerW = width * 0.48;
+      const bannerH = height * 0.055;
+      const bannerX = (width - bannerW) / 2;
+      const bannerY = height - bannerH - (height * 0.035);
+      ctx.fillStyle = 'rgba(2, 6, 23, 0.98)';
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.roundRect(bannerX, bannerY, bannerW, bannerH, 18);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `900 ${Math.round(height * 0.024)}px "Outfit", sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('PEÇA AGORA: GUARAFOOD.COM.BR', width / 2, bannerY + bannerH / 2);
+      ctx.restore();
 
-  // Stop recording
-  onProgress({
-    percent: 99,
-    currentSecond: duration,
-    totalSeconds: duration,
-    sceneIndex: scenes.length,
-    sceneTitle: 'Finalizando codificação de vídeo...',
-    statusText: 'Empacotando arquivo final de vídeo em alta definição...',
+      // 7. FINAL FADE OUT (Last 1.5 seconds)
+      const fadeOutStart = duration - 1.5;
+      if (currentLoopTime > fadeOutStart) {
+        const fadeOutProgress = (currentLoopTime - fadeOutStart) / 1.5;
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.fillStyle = `rgba(2, 6, 23, ${fadeOutProgress})`;
+        ctx.fillRect(0, 0, width, height);
+        ctx.restore();
+      }
+
+      // 8. PREVIEW & PROGRESS
+      if (previewCanvas) {
+        const pCtx = previewCanvas.getContext('2d');
+        if (pCtx) {
+          previewCanvas.width = 320;
+          previewCanvas.height = Math.round(320 * (height / width));
+          pCtx.drawImage(canvas, 0, 0, previewCanvas.width, previewCanvas.height);
+        }
+      }
+
+      const progressPercent = Math.min(99, Math.round((currentLoopTime / duration) * 100));
+      onProgress({
+        percent: progressPercent,
+        currentSecond: Math.round(currentLoopTime),
+        totalSeconds: duration,
+        sceneIndex: currentSceneIdx + 1,
+        sceneTitle: scene.title,
+        statusText: `Finalizando: ${progressPercent}% (${Math.round(currentLoopTime)}s / ${Math.round(duration)}s)`,
+      });
+
+      if (currentLoopTime < duration) {
+        requestAnimationFrame(renderFrame);
+      } else {
+        if (audioSource) { try { audioSource.stop(); } catch {} }
+        recorder.stop();
+        audioCtx.close().catch(() => {});
+        recordingPromise.then((videoBlob) => {
+          const videoUrl = URL.createObjectURL(videoBlob);
+          const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
+          const filename = `guarafood_comercial_2026_${aspectRatio.replace(':', 'x')}.${ext}`;
+          onProgress({ percent: 100, currentSecond: duration, totalSeconds: duration, sceneIndex: scenes.length, sceneTitle: 'Pronto!', statusText: 'Download Liberado!' });
+          resolve({ videoBlob, videoUrl, filename, mimeType, duration });
+        }).catch(reject);
+      }
+    };
+    requestAnimationFrame(renderFrame);
   });
-
-  if (audioSource) {
-    try {
-      audioSource.stop();
-    } catch {
-      // Ignore
-    }
-  }
-  recorder.stop();
-  audioCtx.close().catch(() => {});
-
-  const videoBlob = await recordingPromise;
-  const videoUrl = URL.createObjectURL(videoBlob);
-  const ext = mimeType.includes('mp4') ? 'mp4' : 'webm';
-  const filename = `guarafood_comercial_oficial_2026_${aspectRatio.replace(':', 'x')}.${ext}`;
-
-  onProgress({
-    percent: 100,
-    currentSecond: duration,
-    totalSeconds: duration,
-    sceneIndex: scenes.length,
-    sceneTitle: 'Vídeo Comercial Pronto!',
-    statusText: 'Renderização 100% concluída!',
-  });
-
-  return {
-    videoBlob,
-    videoUrl,
-    filename,
-    mimeType,
-    duration,
-  };
 }

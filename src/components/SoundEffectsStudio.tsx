@@ -16,6 +16,10 @@ interface SoundEffectsStudioProps {
   onMasterVolumeChange: (vol: number) => void;
   isSfxGloballyEnabled: boolean;
   onToggleGlobalSfx: () => void;
+  subtitleOffset: number;
+  onSubtitleOffsetChange: (offset: number) => void;
+  sfxOffset: number;
+  onSfxOffsetChange: (offset: number) => void;
 }
 
 export const SoundEffectsStudio: React.FC<SoundEffectsStudioProps> = ({
@@ -31,6 +35,10 @@ export const SoundEffectsStudio: React.FC<SoundEffectsStudioProps> = ({
   onMasterVolumeChange,
   isSfxGloballyEnabled,
   onToggleGlobalSfx,
+  subtitleOffset,
+  onSubtitleOffsetChange,
+  sfxOffset,
+  onSfxOffsetChange,
 }) => {
   const [filterCategory, setFilterCategory] = useState<'all' | 'cozinha' | 'ambiente' | 'bebidas' | 'sistema'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -145,6 +153,76 @@ export const SoundEffectsStudio: React.FC<SoundEffectsStudioProps> = ({
             <Plus className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Adicionar SFX</span>
           </button>
+        </div>
+      </div>
+
+      {/* SYNC CORRECTION SYSTEM */}
+      <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 space-y-4">
+        <div className="flex items-center gap-2 text-amber-400">
+          <Clock className="w-4 h-4" />
+          <h3 className="text-sm font-black uppercase tracking-wider font-heading">
+            Ajuste Fino de Sincronia (Offset)
+          </h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Subtitle Offset */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-amber-500" />
+                Sincronia das Legendas & Parceiros
+              </label>
+              <span className={`text-xs font-mono font-bold ${subtitleOffset === 0 ? 'text-slate-500' : 'text-amber-400'}`}>
+                {subtitleOffset > 0 ? '+' : ''}{(subtitleOffset * 1000).toFixed(0)}ms
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Adiantar</span>
+              <input
+                type="range"
+                min="-1"
+                max="1"
+                step="0.05"
+                value={subtitleOffset}
+                onChange={(e) => onSubtitleOffsetChange(parseFloat(e.target.value))}
+                className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Atrasar</span>
+            </div>
+            <p className="text-[10px] text-slate-400 leading-tight">
+              Ajuste se as legendas aparecem antes ou depois do áudio. (Ex: -200ms para aparecer mais cedo).
+            </p>
+          </div>
+
+          {/* SFX Offset */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Volume2 className="w-3.5 h-3.5 text-amber-500" />
+                Sincronia dos Efeitos Sonoros (SFX)
+              </label>
+              <span className={`text-xs font-mono font-bold ${sfxOffset === 0 ? 'text-slate-500' : 'text-amber-400'}`}>
+                {sfxOffset > 0 ? '+' : ''}{(sfxOffset * 1000).toFixed(0)}ms
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Adiantar</span>
+              <input
+                type="range"
+                min="-1"
+                max="1"
+                step="0.05"
+                value={sfxOffset}
+                onChange={(e) => onSfxOffsetChange(parseFloat(e.target.value))}
+                className="flex-1 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
+              />
+              <span className="text-[10px] font-bold text-slate-500 uppercase">Atrasar</span>
+            </div>
+            <p className="text-[10px] text-slate-400 leading-tight">
+              Ajuste o disparo de todos os sons (fritura, brindes, etc) para casar com a batida ou cena.
+            </p>
+          </div>
         </div>
       </div>
 

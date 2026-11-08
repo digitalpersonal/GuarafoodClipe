@@ -34,6 +34,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'player' | 'studio' | 'lyrics' | 'audio' | 'partners' | 'sfx'>('player');
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
 
+  // Sync Correction Offsets (in seconds, e.g., 0.2 = 200ms)
+  const [subtitleOffset, setSubtitleOffset] = useState<number>(0);
+  const [sfxOffset, setSfxOffset] = useState<number>(0);
+
   const triggeredCuesRef = useRef<Set<string>>(new Set());
   const prevTimeRef = useRef<number>(0);
 
@@ -90,10 +94,11 @@ export default function App() {
 
     if (!isSfxGloballyEnabled || !isPlaying) return;
 
-    // Check cues to fire at current second
+    // Check cues to fire at current second (adjusted by sfxOffset)
     for (const cue of sfxCues) {
       if (!cue.enabled) continue;
-      if (time >= cue.timeMark && time <= cue.timeMark + 0.35) {
+      const triggerTime = cue.timeMark + sfxOffset;
+      if (time >= triggerTime && time <= triggerTime + 0.35) {
         if (!triggeredCuesRef.current.has(cue.id)) {
           triggeredCuesRef.current.add(cue.id);
           playLiveSFX(cue.type, audioCtxRef.current, cue.volume * sfxMasterVolume, cue.duration);
@@ -110,7 +115,7 @@ export default function App() {
       triggeredCuesRef.current = new Set(
         Array.from(triggeredCuesRef.current).filter((id) => {
           const c = sfxCues.find((x) => x.id === id);
-          return c ? c.timeMark < time : false;
+          return c ? (c.timeMark + sfxOffset) < time : false;
         })
       );
     }
@@ -238,6 +243,7 @@ export default function App() {
               analyserNode={analyserRef.current}
               partners={partners}
               onOpenExportModal={() => setIsShareModalOpen(true)}
+              subtitleOffset={subtitleOffset}
             />
 
             {/* SCENE QUICK JUMP STRIP */}
@@ -352,6 +358,10 @@ export default function App() {
                 onMasterVolumeChange={setSfxMasterVolume}
                 isSfxGloballyEnabled={isSfxGloballyEnabled}
                 onToggleGlobalSfx={() => setIsSfxGloballyEnabled(!isSfxGloballyEnabled)}
+                subtitleOffset={subtitleOffset}
+                onSubtitleOffsetChange={setSubtitleOffset}
+                sfxOffset={sfxOffset}
+                onSfxOffsetChange={setSfxOffset}
               />
             )}
 
@@ -449,6 +459,10 @@ export default function App() {
         audioUrl={currentTrack.audioUrl}
         duration={duration}
         sfxCues={sfxCues}
+        sfxMasterVolume={sfxMasterVolume}
+        isSfxGloballyEnabled={isSfxGloballyEnabled}
+        subtitleOffset={subtitleOffset}
+        sfxOffset={sfxOffset}
       />
     </div>
   );

@@ -22,6 +22,7 @@ interface VideoPlayerProps {
   overlayEffect?: OverlayEffectType;
   onOverlayEffectChange?: (effect: OverlayEffectType) => void;
   onOpenExportModal?: () => void;
+  subtitleOffset?: number;
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -42,6 +43,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   overlayEffect = 'master-tv',
   onOverlayEffectChange,
   onOpenExportModal,
+  subtitleOffset = 0,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
@@ -108,14 +110,14 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     });
   }, [activeSceneIdx, nextSceneIdx, isPlaying, scenes]);
 
-  // Active lyric line calculation
+  // Active lyric line calculation (adjusted by sync offset)
   const activeLyric = lyrics.find(
-    (l) => currentTime >= l.startTime && currentTime <= l.endTime
+    (l) => (currentTime - subtitleOffset) >= l.startTime && (currentTime - subtitleOffset) <= l.endTime
   );
 
-  // Active partner restaurant calculation
+  // Active partner restaurant calculation (adjusted by sync offset)
   const activePartner = partners.find(
-    (p) => currentTime >= p.timeMark && currentTime < p.timeMark + 2.5
+    (p) => (currentTime - subtitleOffset) >= p.timeMark && (currentTime - subtitleOffset) < p.timeMark + 2.5
   );
 
   // Handle audio volume & mute

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { VideoScene, LyricLine } from '../types/clip';
-import { Sliders, Video, Sparkles, Layers, Image as ImageIcon, FastForward, Play, Tv, Film, Flame, Upload, Link as LinkIcon, Check, Music, Type, Plus } from 'lucide-react';
+import { Sliders, Video, Layers, Image as ImageIcon, FastForward, Play, Tv, Film, Flame, Upload, Link as LinkIcon, Check, Music, Type, Plus } from 'lucide-react';
 
 interface DirectorStudioProps {
   scenes: VideoScene[];
