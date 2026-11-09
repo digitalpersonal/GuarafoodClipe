@@ -144,11 +144,11 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
     video.crossOrigin = 'anonymous';
     video.muted = true;
     video.playsInline = true;
-    video.preload = 'auto';
+    video.preload = 'metadata'; // Load only metadata initially for better performance
     
     const timeout = setTimeout(() => resolve(video), 8000); // 8s timeout
     
-    video.oncanplaythrough = () => {
+    video.onloadedmetadata = () => {
       clearTimeout(timeout);
       resolve(video);
     };
