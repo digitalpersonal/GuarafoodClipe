@@ -93,27 +93,51 @@ export async function renderFinalCommercialVideo({
     height = 820;
   }
 
-  // Pre-load all scene media (images and videos) in parallel
+  // Pre-load all scene media (images and videos) in parallel with concurrency limits
   onProgress({
     percent: 3,
     currentSecond: 0,
     totalSeconds: duration,
     sceneIndex: 0,
-    sceneTitle: 'Carregando mídias em alta definição...',
-    statusText: 'Pré-carregando fotografias e vídeos das 17 cenas...',
+    sceneTitle: 'Carregando mídias...',
+    statusText: 'Preparando fotografias e vídeos...',
   });
 
-  const [watermarkImg, ...loadedMedia] = await Promise.all([
-    preloadImage('/assets/aistudio/Logo_GuaraFood_2026_transparent.png'),
-    ...scenes.map((s) => {
-      if (s.videoSrc) {
-        return preloadVideo(s.videoSrc);
-      }
-      return preloadImage(s.imageSrc);
-    }),
-  ]);
+  const mediaUrls = [
+    '/assets/aistudio/Logo_GuaraFood_2026_transparent.png',
+    ...scenes.map((s) => s.videoSrc || s.imageSrc)
+  ];
+  const mediaTypes = [
+    'image',
+    ...scenes.map((s) => (s.videoSrc ? 'video' : 'image'))
+  ];
 
-// Preload a video URL into HTMLVideoElement
+  const loadedMedia: (HTMLImageElement | HTMLVideoElement)[] = [];
+  const BATCH_SIZE = 3;
+  
+  for (let i = 0; i < mediaUrls.length; i += BATCH_SIZE) {
+    const batch = mediaUrls.slice(i, i + BATCH_SIZE);
+    const types = mediaTypes.slice(i, i + BATCH_SIZE);
+    
+    const results = await Promise.all(batch.map((url, idx) => {
+      return types[idx] === 'video' ? preloadVideo(url) : preloadImage(url);
+    }));
+    
+    loadedMedia.push(...results);
+    
+    onProgress({
+      percent: Math.round(3 + (Math.min(i + BATCH_SIZE, mediaUrls.length) / mediaUrls.length) * 10),
+      currentSecond: 0,
+      totalSeconds: duration,
+      sceneIndex: 0,
+      sceneTitle: 'Carregando mídias...',
+      statusText: `Carregando ${Math.min(i + BATCH_SIZE, mediaUrls.length)} de ${mediaUrls.length} arquivos...`,
+    });
+  }
+
+  const [watermarkImg, ...loadedScenesMedia] = loadedMedia;
+
+// Preload a video URL into HTMLVideoElement with timeout
 function preloadVideo(src: string): Promise<HTMLVideoElement> {
   return new Promise((resolve) => {
     const video = document.createElement('video');
@@ -121,10 +145,16 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
     video.muted = true;
     video.playsInline = true;
     video.preload = 'auto';
-    video.oncanplaythrough = () => resolve(video);
-    video.onerror = () => {
-      // Return an empty video element if it fails
+    
+    const timeout = setTimeout(() => resolve(video), 8000); // 8s timeout
+    
+    video.oncanplaythrough = () => {
+      clearTimeout(timeout);
       resolve(video);
+    };
+    video.onerror = () => {
+      clearTimeout(timeout);
+      resolve(video); // Resolve anyway to not block rendering
     };
     video.src = src;
     video.load();
