@@ -79,18 +79,18 @@ export async function renderFinalCommercialVideo({
   onProgress: (p: RenderProgress) => void;
   previewCanvas?: HTMLCanvasElement | null;
 }): Promise<RenderResult> {
-  // Determine dimensions based on selected aspect ratio
-  let width = 1920;
-  let height = 1080;
+  // Determine dimensions based on selected aspect ratio (720p base)
+  let width = 1280;
+  let height = 720;
   if (aspectRatio === '9:16') {
-    width = 1080;
-    height = 1920;
+    width = 720;
+    height = 1280;
   } else if (aspectRatio === '1:1') {
-    width = 1080;
-    height = 1080;
+    width = 720;
+    height = 720;
   } else if (aspectRatio === '21:9') {
-    width = 1920;
-    height = 820;
+    width = 1280;
+    height = 548;
   }
 
   // Pre-load all scene media (images and videos) in parallel with concurrency limits
@@ -113,7 +113,7 @@ export async function renderFinalCommercialVideo({
   ];
 
   const loadedMedia: (HTMLImageElement | HTMLVideoElement)[] = [];
-  const BATCH_SIZE = 3;
+  const BATCH_SIZE = 1;
   
   for (let i = 0; i < mediaUrls.length; i += BATCH_SIZE) {
     const batch = mediaUrls.slice(i, i + BATCH_SIZE);
@@ -229,7 +229,7 @@ function preloadVideo(src: string): Promise<HTMLVideoElement> {
   const mimeType = getSupportedMimeType() || 'video/webm';
   const recorder = new MediaRecorder(canvasStream, {
     mimeType,
-    videoBitsPerSecond: 6_000_000, // 6 Mbps for crisp 1080p
+    videoBitsPerSecond: 2_500_000, // 2.5 Mbps for mobile-friendly size while keeping quality
   });
 
   const chunks: Blob[] = [];

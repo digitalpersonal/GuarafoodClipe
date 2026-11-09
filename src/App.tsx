@@ -184,6 +184,27 @@ export default function App() {
     }
   };
 
+  // Load saved state on mount
+  useEffect(() => {
+    const savedScenes = localStorage.getItem('guarafood_scenes');
+    const savedPartners = localStorage.getItem('guarafood_partners');
+    const savedLyrics = localStorage.getItem('guarafood_lyrics');
+    const savedSfxCues = localStorage.getItem('guarafood_sfxCues');
+
+    if (savedScenes) setScenes(JSON.parse(savedScenes));
+    if (savedPartners) setPartners(JSON.parse(savedPartners));
+    if (savedLyrics) setLyrics(JSON.parse(savedLyrics));
+    if (savedSfxCues) setSfxCues(JSON.parse(savedSfxCues));
+  }, []);
+
+  // Save state when it changes
+  useEffect(() => {
+    localStorage.setItem('guarafood_scenes', JSON.stringify(scenes));
+    localStorage.setItem('guarafood_partners', JSON.stringify(partners));
+    localStorage.setItem('guarafood_lyrics', JSON.stringify(lyrics));
+    localStorage.setItem('guarafood_sfxCues', JSON.stringify(sfxCues));
+  }, [scenes, partners, lyrics, sfxCues]);
+
   // Keep activeSceneIndex synced with currentTime
   useEffect(() => {
     const idx = scenes.findIndex(
@@ -194,6 +215,38 @@ export default function App() {
     }
   }, [currentTime, scenes, activeSceneIndex]);
 
+  const handleExportProject = () => {
+    const projectData = {
+      scenes,
+      partners,
+      lyrics,
+      sfxCues,
+    };
+    const blob = new Blob([JSON.stringify(projectData)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'guarafood_projeto.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportProject = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (data.scenes) setScenes(data.scenes);
+        if (data.partners) setPartners(data.partners);
+        if (data.lyrics) setLyrics(data.lyrics);
+        if (data.sfxCues) setSfxCues(data.sfxCues);
+      } catch (err) {
+        alert('Erro ao importar projeto. Verifique o arquivo.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-amber-500 selection:text-slate-950">
       {/* TOP BAR */}
@@ -203,6 +256,8 @@ export default function App() {
         onOpenShareModal={() => setIsShareModalOpen(true)}
         activeTab={activeTab as any}
         setActiveTab={setActiveTab as any}
+        onExportProject={handleExportProject}
+        onImportProject={handleImportProject}
       />
 
       {/* MAIN CONTAINER */}
@@ -466,4 +521,5 @@ export default function App() {
       />
     </div>
   );
+
 }

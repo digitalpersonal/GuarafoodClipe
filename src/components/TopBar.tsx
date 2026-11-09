@@ -7,6 +7,8 @@ interface TopBarProps {
   onOpenShareModal: () => void;
   activeTab: 'player' | 'studio' | 'lyrics' | 'audio' | 'partners' | 'sfx';
   setActiveTab: (tab: 'player' | 'studio' | 'lyrics' | 'audio' | 'partners' | 'sfx') => void;
+  onExportProject: () => void;
+  onImportProject: (file: File) => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
@@ -15,6 +17,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   onOpenShareModal,
   activeTab,
   setActiveTab,
+  onExportProject,
+  onImportProject,
 }) => {
   return (
     <header className="flex items-center justify-between gap-2 sm:gap-4 px-3 sm:px-6 py-2.5 sm:py-3.5 border-b border-slate-800/80 bg-slate-950/90 backdrop-blur-xl sticky top-0 z-40 max-w-full overflow-x-hidden">
@@ -88,24 +92,35 @@ export const TopBar: React.FC<TopBarProps> = ({
         </button>
       </nav>
 
-      {/* Zone 3: Primary action buttons (Suno AI & Share) */}
+      {/* Zone 3: Primary action buttons */}
       <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-        <a
-          href="https://suno.com"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-purple-300 bg-purple-950/60 border border-purple-500/40 hover:bg-purple-900/80 rounded-xl transition-all whitespace-nowrap shrink-0"
-          title="Criar Música no Suno AI"
+        <input
+          type="file"
+          id="import-project"
+          className="hidden"
+          accept=".json"
+          onChange={(e) => {
+            if (e.target.files && e.target.files[0]) {
+              onImportProject(e.target.files[0]);
+              e.target.value = '';
+            }
+          }}
+        />
+        <label
+          htmlFor="import-project"
+          className="cursor-pointer px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all whitespace-nowrap"
         >
-          <Wand2 className="w-3.5 h-3.5 text-purple-400" />
-          <span className="hidden xs:inline sm:inline">Suno AI</span>
-          <ExternalLink className="w-3 h-3 text-purple-400" />
-        </a>
-
+          Carregar
+        </label>
+        <button
+          onClick={onExportProject}
+          className="px-2 sm:px-3 py-1.5 text-[11px] sm:text-xs font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 rounded-xl transition-all whitespace-nowrap"
+        >
+          Salvar Projeto
+        </button>
         <button
           onClick={onOpenShareModal}
-          className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-black text-slate-950 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 rounded-xl transition-all shadow-md shadow-amber-500/25 whitespace-nowrap shrink-0 flex items-center gap-1.5 active:scale-95 cursor-pointer"
-          title="Renderizar e Baixar Vídeo Completo"
+          className="px-2.5 sm:px-4 py-1.5 sm:py-2 text-[11px] sm:text-xs font-black text-slate-950 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 rounded-xl transition-all shadow-md shadow-amber-500/25 whitespace-nowrap flex items-center gap-1.5 active:scale-95 cursor-pointer"
         >
           <Download className="w-3.5 h-3.5" />
           <span>Baixar Vídeo</span>
